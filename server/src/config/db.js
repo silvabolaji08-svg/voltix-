@@ -1,17 +1,50 @@
 ﻿import mongoose from 'mongoose'
 
 /**
- * Connects to MongoDB. Called once, before the server starts listening —
- * an API that is up but can't reach its database is worse than one that
- * refused to start, because it fails on every request instead of loudly once.
+ * Cached connection.
+ *
+ * A long-running server connects once at startup. Serverless has no startup —
+ * every request may run in a fresh function, and connecting each time would
+ * open hundreds of sockets and exhaust Atlas's connection limit.
+ *
+ * The cache lives on `globalThis` because a warm serverless invocation reuses
+ * the process but can re-evaluate modules; a module-level variable alone is
+ * not reliably shared, a global is.
  */
+const cache = (globalThis.__voltixMongo ??= { conn: null, promise: null })
+
 export async function connectDB() {
-  const uri = process.env.MONGO_URI
-  if (!uri) throw new Error('MONGO_URI is missing. Copy .env.example to .env and fill it in.')
+  if (cache.conn) return cache.conn
 
-  mongoose.set('strictQuery', true)
+  if (!cache.promise) {
+    const uri = process.env.MONGO_URI
+    if (!uri) throw new Error('MONGO_URI is missing. Copy .env.example to .env and fill it in.')
 
-  const conn = await mongoose.connect(uri)
-  console.log(`MongoDB connected: ${conn.connection.host}/${conn.connection.name}`)
-  return conn
+    mongoose.set('strictQuery', true)
+
+    cache.promise = mongoose
+      .connect(uri, {
+        /* Fail fast instead of queuing commands against a dead connection —
+           a hung request is worse than an error you can see. */
+        bufferCommands: false,
+        /* Small pool: many short-lived functions each want a few sockets. */
+        maxPoolSize: 5,
+        /* Well under Vercel's 10s function limit, so a database problem
+           surfaces as a clear error rather than a timeout. */
+        serverSelectionTimeoutMS: 5000,
+      })
+      .then((m) => {
+        console.log(`MongoDB connected: ${m.connection.host}/${m.connection.name}`)
+        return m
+      })
+      .catch((err) => {
+        /* Clear the cached promise so the next request retries rather than
+           awaiting a rejection forever. */
+        cache.promise = null
+        throw err
+      })
+  }
+
+  cache.conn = await cache.promise
+  return cache.conn
 }
