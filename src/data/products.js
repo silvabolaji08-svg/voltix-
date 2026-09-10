@@ -1,4 +1,4 @@
-﻿
+
 
 export const categories = [
   { id: 'audio', name: 'Audio', blurb: 'Headphones, earbuds and speakers', image: '/products/cat-audio.jpg' },
