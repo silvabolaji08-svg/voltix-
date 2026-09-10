@@ -40,7 +40,7 @@ export const products = [
     specs: {
       Driver: '40 mm beryllium-coated dynamic',
       'Battery life': '40 h (ANC on), 60 h (ANC off)',
-      Charging: 'USB-C, 5 min â†’ 6 h playback',
+      Charging: 'USB-C, 5 min �  6 h playback',
       Connectivity: 'Bluetooth 5.4, 3.5 mm wired',
       Weight: '253 g',
       Warranty: '2 years',
@@ -68,11 +68,11 @@ export const products = [
     short: 'Flat-response wired monitors built for mixing, not for flattering.',
     description:
       'A deliberately uncoloured tuning curve so what you hear is what you mixed. Detachable cable, replaceable pads, and a headband that survives being thrown in a bag.',
-    highlights: ['Flat Â±2 dB response, 10 Hzâ€“40 kHz', 'Detachable braided cable', 'Replaceable velour pads', 'Folds flat for transport'],
+    highlights: ['Flat ±2 dB response, 10 Hz�40 kHz', 'Detachable braided cable', 'Replaceable velour pads', 'Folds flat for transport'],
     specs: {
       Driver: '45 mm dynamic',
-      Impedance: '38 Î©',
-      'Frequency response': '10 Hz â€“ 40 kHz',
+      Impedance: '38 Ω',
+      'Frequency response': '10 Hz � 40 kHz',
       Cable: '3 m detachable, 3.5 mm + 6.35 mm adapter',
       Weight: '284 g',
       Warranty: '2 years',
@@ -197,7 +197,7 @@ export const products = [
       Processor: '16-core, 4.1 GHz boost',
       Graphics: '12 GB discrete',
       Memory: '32 GB DDR5',
-      Storage: '1â€“4 TB NVMe',
+      Storage: '1�4 TB NVMe',
       Weight: '2.1 kg',
       Warranty: '3 years',
     },
@@ -222,12 +222,12 @@ export const products = [
     variants: { label: 'Storage', options: ['256 GB', '512 GB', '1 TB'] },
     short: 'Titanium frame, 6.7" LTPO display, and a genuinely all-day battery.',
     description:
-      'The LTPO panel drops to 1 Hz on static content, which is most of why this phone still has 30% left at midnight. Triple camera with a 5Ã— periscope.',
-    highlights: ['6.7" LTPO OLED, 1â€“120 Hz', 'Titanium frame, IP68', '50 MP main + 5Ã— periscope', '80 W wired, 30 W wireless charging'],
+      'The LTPO panel drops to 1 Hz on static content, which is most of why this phone still has 30% left at midnight. Triple camera with a 5� periscope.',
+    highlights: ['6.7" LTPO OLED, 1�120 Hz', 'Titanium frame, IP68', '50 MP main + 5� periscope', '80 W wired, 30 W wireless charging'],
     specs: {
       Display: '6.7" LTPO OLED 120 Hz',
       Chipset: 'Octa-core 3 nm',
-      Camera: '50 MP + 48 MP ultra-wide + 12 MP 5Ã— periscope',
+      Camera: '50 MP + 48 MP ultra-wide + 12 MP 5� periscope',
       Battery: '5000 mAh, 80 W wired',
       Build: 'Titanium, IP68',
       Warranty: '2 years',
@@ -341,16 +341,16 @@ export const products = [
     stock: 15,
     tags: [],
     variants: { label: 'Finish', options: ['Graphite', 'Sand'] },
-    short: 'Room-correcting 360Â° sound that adapts to where you put it.',
+    short: 'Room-correcting 360° sound that adapts to where you put it.',
     description:
       'Six drivers firing outward and a microphone array that measures the room on startup, then compensates for the wall you shoved it against.',
-    highlights: ['360Â° six-driver array', 'Automatic room correction', 'Wi-Fi 6, AirPlay 2 and Chromecast', 'Stereo pairing'],
+    highlights: ['360° six-driver array', 'Automatic room correction', 'Wi-Fi 6, AirPlay 2 and Chromecast', 'Stereo pairing'],
     specs: {
       Drivers: '2 tweeters, 2 mid-range, 2 passive radiators',
       Power: '120 W total',
       Connectivity: 'Wi-Fi 6, Bluetooth 5.3, AirPlay 2',
       Inputs: 'USB-C, 3.5 mm aux',
-      Dimensions: '180 Ã— 105 mm',
+      Dimensions: '180 � 105 mm',
       Warranty: '2 years',
     },
     reviews: [
@@ -398,7 +398,7 @@ export const products = [
     reviewCount: 132,
     stock: 6,
     tags: ['new'],
-    variants: { label: 'Kit', options: ['Body only', 'With 24â€“70 mm'] },
+    variants: { label: 'Kit', options: ['Body only', 'With 24�70 mm'] },
     short: '33 MP full-frame with in-body stabilisation and 6K video.',
     description:
       'Eight stops of in-body stabilisation means handheld shots at a quarter second are realistic. Dual card slots and weather sealing for work you cannot reshoot.',
@@ -466,7 +466,7 @@ export const products = [
       'Flight time': '43 min',
       Range: '12 km',
       Sensing: 'Omnidirectional',
-      'Folded size': '148 Ã— 90 Ã— 62 mm',
+      'Folded size': '148 � 90 � 62 mm',
       Warranty: '1 year',
     },
     reviews: [
@@ -525,7 +525,7 @@ export const products = [
     specs: {
       Layout: 'Full size with numpad',
       Switches: 'Scissor, 1.8 mm travel',
-      Connectivity: 'Bluetooth 5.1 Ã—3, USB-C',
+      Connectivity: 'Bluetooth 5.1 �3, USB-C',
       Battery: 'Up to 3 months',
       Weight: '760 g',
       Warranty: '2 years',
@@ -552,7 +552,7 @@ export const products = [
     specs: {
       Sensor: '8000 DPI optical',
       Buttons: '7 programmable',
-      Battery: '70 days, 1 min charge â†’ 3 h',
+      Battery: '70 days, 1 min charge �  3 h',
       Connectivity: 'Bluetooth + 2.4 GHz receiver',
       Weight: '141 g',
       Warranty: '2 years',
@@ -579,9 +579,9 @@ export const products = [
     description: 'One cable carries video, data and 96 watts to your laptop. Factory-calibrated with a matte coating that kills reflections.',
     highlights: ['32" 4K IPS at 144 Hz', '96 W USB-C power delivery', 'Built-in 3-port USB hub', 'Factory calibrated, 98% DCI-P3'],
     specs: {
-      Panel: '32" IPS, 3840 Ã— 2160',
+      Panel: '32" IPS, 3840 � 2160',
       'Refresh rate': '144 Hz',
-      Ports: 'USB-C 96 W, 2 Ã— HDMI 2.1, DisplayPort 1.4',
+      Ports: 'USB-C 96 W, 2 � HDMI 2.1, DisplayPort 1.4',
       'Colour gamut': '98% DCI-P3',
       Stand: 'Height, tilt, swivel, pivot',
       Warranty: '3 years',
@@ -606,10 +606,10 @@ export const products = [
     tags: ['value'],
     variants: { label: 'Stand', options: ['Standard stand', 'VESA only'] },
     short: 'The sensible desk monitor: QHD, 165 Hz, adjustable stand.',
-    description: 'Nothing flashy â€” a good IPS panel, a stand that actually adjusts, and enough refresh rate for games after work.',
+    description: 'Nothing flashy � a good IPS panel, a stand that actually adjusts, and enough refresh rate for games after work.',
     highlights: ['27" QHD IPS at 165 Hz', '1 ms response, adaptive sync', 'Full ergonomic stand', 'USB-C 65 W'],
     specs: {
-      Panel: '27" IPS, 2560 Ã— 1440',
+      Panel: '27" IPS, 2560 � 1440',
       'Refresh rate': '165 Hz',
       Ports: 'USB-C 65 W, HDMI 2.0, DisplayPort 1.4',
       'Colour gamut': '95% DCI-P3',
@@ -636,7 +636,7 @@ export const products = [
     description: 'Plug in a keyboard and it switches to a windowed desktop mode. The included pen has 4096 pressure levels and charges magnetically.',
     highlights: ['11" LCD, 120 Hz', 'Pen included, 4096 pressure levels', 'Desktop mode with external display', '12-hour battery'],
     specs: {
-      Display: '11" 2560 Ã— 1600, 120 Hz',
+      Display: '11" 2560 � 1600, 120 Hz',
       Chipset: 'Octa-core',
       Memory: '8 GB RAM',
       Battery: '8000 mAh, 12 h video',
@@ -663,12 +663,12 @@ export const products = [
     variants: { label: 'Storage', options: ['128 GB', '256 GB'] },
     short: 'Standalone pancake-lens VR with colour passthrough.',
     description: 'Pancake lenses cut the depth almost in half compared to the last generation, and full-colour passthrough makes mixed reality usable.',
-    highlights: ['2064 Ã— 2208 per eye, 120 Hz', 'Pancake lenses, 40% slimmer', 'Full-colour passthrough', 'Inside-out hand tracking'],
+    highlights: ['2064 � 2208 per eye, 120 Hz', 'Pancake lenses, 40% slimmer', 'Full-colour passthrough', 'Inside-out hand tracking'],
     specs: {
-      Display: '2064 Ã— 2208 per eye LCD',
+      Display: '2064 � 2208 per eye LCD',
       'Refresh rate': '90 / 120 Hz',
       Optics: 'Pancake lenses, adjustable IPD',
-      Battery: '2â€“3 h',
+      Battery: '2�3 h',
       Weight: '515 g',
       Warranty: '1 year',
     },
@@ -693,9 +693,9 @@ export const products = [
     highlights: ['140 W total across 3 ports', 'GaN III, runs cool', 'Foldable pins', 'Dynamic power distribution'],
     specs: {
       Output: '140 W total (100 W max single port)',
-      Ports: '2 Ã— USB-C, 1 Ã— USB-A',
+      Ports: '2 � USB-C, 1 � USB-A',
       Technology: 'GaN III',
-      Size: '68 Ã— 55 Ã— 32 mm',
+      Size: '68 � 55 � 32 mm',
       Safety: 'Over-current, over-voltage, thermal',
       Warranty: '2 years',
     },
@@ -723,7 +723,7 @@ export const products = [
     highlights: ['20 000 mAh, 100 W output', 'Live power display', 'Recharges in 70 minutes', 'Airline carry-on compliant'],
     specs: {
       Capacity: '20 000 mAh / 72 Wh',
-      Output: '100 W max, 2 Ã— USB-C + USB-A',
+      Output: '100 W max, 2 � USB-C + USB-A',
       Recharge: '70 min at 65 W',
       Display: 'Watts and time remaining',
       Weight: '440 g',
@@ -747,11 +747,11 @@ export const products = [
     variants: { label: 'Capacity', options: ['1 TB', '2 TB', '4 TB'] },
     short: '2000 MB/s, hardware encryption, and a shell that survives a 3 m drop.',
     description: 'Fast enough to edit 4K footage straight off the drive, with AES-256 hardware encryption that does not slow it down.',
-    highlights: ['Up to 2000 MB/s read', 'AES-256 hardware encryption', 'IP65, 3 m drop rated', 'USB-C 3.2 Gen 2Ã—2'],
+    highlights: ['Up to 2000 MB/s read', 'AES-256 hardware encryption', 'IP65, 3 m drop rated', 'USB-C 3.2 Gen 2�2'],
     specs: {
       Capacity: '1 TB / 2 TB / 4 TB',
       Speed: '2000 MB/s read, 1800 MB/s write',
-      Interface: 'USB-C 3.2 Gen 2Ã—2',
+      Interface: 'USB-C 3.2 Gen 2�2',
       Security: 'AES-256 hardware encryption',
       Durability: 'IP65, 3 m drop',
       Warranty: '5 years',
