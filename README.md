@@ -1,131 +1,201 @@
-# Voltix — Full-Stack E-Commerce Store
+# Voltix
 
-A premium tech-gadget storefront with a working admin dashboard. This repository is
-**phase one: the complete frontend**, running on mock data shaped like the API
-responses the Express + MongoDB backend will return.
+A full-stack e-commerce storefront for tech gadgets, with a working admin dashboard.
+Built from scratch — no UI framework, no component library, no CSS framework.
 
-Built with **Vite + React + React Router + plain CSS** — no UI framework, no Tailwind,
-no component library. Every component and every line of CSS is hand-written.
+**Live:** [voltix-tech-store.vercel.app](https://voltix-tech-store.vercel.app)
+**API:** [voltix-api-wine.vercel.app/api/health](https://voltix-api-wine.vercel.app/api/health)
 
 ---
 
-## Quick start
+## What it is
+
+A complete shop: browse and filter 26 products, read reviews, build a cart and a
+wishlist, register an account, place an order, and track it. Behind a sign-in wall
+there's an admin dashboard for managing products and moving orders through their
+statuses.
+
+Products, users and orders live in MongoDB. The React frontend and the Express API
+are deployed separately and talk over HTTP.
+
+---
+
+## Stack
+
+**Frontend** — Vite 5, React 18, React Router 6, GSAP 3 (ScrollTrigger, Flip, SplitText),
+hand-written CSS
+
+**Backend** — Node, Express 4, Mongoose 8, JSON Web Tokens, bcryptjs
+
+**Data** — MongoDB Atlas
+
+**Hosting** — Vercel (static frontend + serverless API), two projects from one repo
+
+Twelve direct dependencies in total.
+
+---
+
+## Demo accounts
+
+| Role     | Email                | Password    | Lands on   |
+|----------|----------------------|-------------|------------|
+| Customer | `demo@voltix.store`  | `demo1234`  | `/account` |
+| Admin    | `admin@voltix.store` | `admin1234` | `/admin`   |
+
+Both are pre-filled by buttons at the bottom of the sign-in page.
+
+---
+
+## Running locally
+
+Requires Node 18+ and a MongoDB connection string (the Atlas free tier is enough).
+
+### 1. The API
+
+```bash
+cd server
+npm install
+cp .env.example .env      # then fill it in — see below
+npm run seed              # loads 26 products, 2 users, 8 orders
+npm run dev               # http://localhost:5000
+```
+
+`server/.env`:
+
+| Variable         | Example                                            | Notes |
+|------------------|----------------------------------------------------|-------|
+| `PORT`           | `5000`                                             | |
+| `MONGO_URI`      | `mongodb+srv://user:pass@cluster.mongodb.net/voltix` | Include `/voltix` before the `?` |
+| `JWT_SECRET`     | any long random string                             | Changing it invalidates every issued token |
+| `JWT_EXPIRES_IN` | `7d`                                               | |
+| `CLIENT_ORIGIN`  | `http://localhost:5173`                            | Comma-separated for more than one |
+
+### 2. The frontend
+
+From the repository root, in a second terminal:
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+npm run dev               # http://localhost:5173
 ```
+
+Root `.env`:
+
+Anything prefixed `VITE_` is substituted into the browser bundle at build time, so
+it is public. Secrets belong in `server/.env`, which never reaches the client.
+
+### Other scripts
 
 ```bash
-npm run build    # production build into dist/
-npm run preview  # serve the production build locally
+npm run build             # production build into dist/
+npm run preview           # serve that build locally
+
+cd server
+npm run seed              # wipe and reload the demo data
+npm run seed:destroy      # empty every collection
 ```
 
-Requires Node 18 or newer.
+---
 
-### Demo accounts
+## API
 
-| Role     | Email                | Password    | Lands on |
-|----------|----------------------|-------------|----------|
-| Customer | `demo@voltix.store`  | `demo1234`  | `/account` |
-| Admin    | `admin@voltix.store` | `admin1234` | `/admin` |
+Base path `/api`. All responses are JSON. Every model's `toJSON` renames `_id` to
+`id` and strips `__v` and `password`, so the client never sees Mongo internals.
 
-Both are pre-filled by the buttons at the bottom of the sign-in page.
+### Products
+
+| Method | Path                  | Auth  | Notes |
+|--------|-----------------------|-------|-------|
+| GET    | `/products`           | —     | Filtered, sorted, paginated |
+| GET    | `/products/meta`      | —     | Brands, categories, price bounds for the filter sidebar |
+| GET    | `/products/:slug`     | —     | One product by slug |
+| POST   | `/products`           | admin | |
+| PUT    | `/products/:id`       | admin | |
+| DELETE | `/products/:id`       | admin | |
+
+`GET /products` accepts `q`, `category`, `brand` (comma-separated), `maxPrice`,
+`minRating`, `inStock=1`, `sale=1`, `page`, `limit`, and `sort` — one of
+`featured`, `price-asc`, `price-desc`, `rating-desc`, `newest`, `name-asc`.
+It returns `{ items, total, page, pages }`.
+
+### Auth
+
+| Method | Path             | Auth | Notes |
+|--------|------------------|------|-------|
+| POST   | `/auth/register` | —    | Returns a token |
+| POST   | `/auth/login`    | —    | Returns a token |
+| GET    | `/auth/me`       | user | Restores a session from a stored token |
+
+### Orders
+
+| Method | Path                        | Auth  | Notes |
+|--------|-----------------------------|-------|-------|
+| POST   | `/orders`                   | —     | Guest checkout allowed; attaches the user if a token is sent |
+| GET    | `/orders/mine`              | user  | The signed-in user's orders |
+| GET    | `/orders/:reference`        | —     | Lookup by order reference |
+| GET    | `/orders`                   | admin | Every order |
+| PATCH  | `/orders/:reference/status` | admin | |
+| GET    | `/orders/stats/summary`     | admin | Revenue, counts, status breakdown, daily totals |
+
+### Health
+
+`GET /api/health` returns `{ ok: true, uptime }`. It is registered *before* the
+database middleware, so it answers even when MongoDB is unreachable — which is how
+you tell "server down" from "database down".
 
 ---
 
-## What's built
-
-### Storefront
-- **Home** — hero, value props, category grid, bestsellers, promo banner, new arrivals, sale rail
-- **Shop** — filter by category, brand, max price, rating, stock and sale; six sort orders; text search. Every filter lives in the URL, so a filtered view is shareable and survives a refresh.
-- **Product detail** — gallery with view switching, variant picker, quantity stepper, stock messaging, tabbed description / specifications / reviews with a rating breakdown, related products
-- **Cart** — slide-over drawer plus a full cart page, free-delivery progress bar, quantity editing, live totals
-- **Wishlist** — persisted per browser
-- **404** — catch-all route
-
-### Checkout
-Three steps (contact → delivery → payment) with per-step validation, inline field
-errors, a focusable error summary, card-number and expiry formatting, three delivery
-options, and an order confirmation page with the full receipt.
-
-### Accounts
-Register with password-strength feedback, sign in, account area with order history,
-saved items and account details. Routes are guarded — `/account` needs a session,
-`/admin` needs an admin session.
-
-### Admin dashboard
-- **Overview** — revenue, orders, units and AOV stats; a six-month revenue chart; recent orders; top products by units; low and out-of-stock alerts
-- **Products** — searchable, filterable table with create, edit and delete in a slide-over form
-- **Orders** — search and status filter, expandable rows showing items, address and payment, and inline status changes that write straight through
+## Structure
 
 ---
 
-## Design system
+## Decisions worth knowing
 
-Generated with the [`ui-ux-pro-max`](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
-design database, then tuned:
+**Prices come from the database, never the request.** Checkout sends only
+`productId`, `quantity` and `variant`. The API looks up each product, computes the
+line total itself, and stores it on the order. A client that sends its own prices
+can be told to charge £0.
 
-| Decision | Value |
-|---|---|
-| Style | Minimalism / Swiss — spacious, product-forward, high contrast |
-| Type | Inter, single family, hierarchy from weight and size |
-| Colour | Monochrome (`#18181b`) + one blue accent (`#2563eb`) on `#fafafa` |
-| Motion | Standard tier — 200–250 ms, `prefers-reduced-motion` honoured |
-| Density | Standard — 4 px → 96 px spacing scale |
+**Filtering happens in the database.** `GET /products` builds a Mongo query rather
+than shipping the whole catalogue for the browser to sift. The results page and the
+total count run as two parallel queries.
 
-All of it lives in `src/index.css` as CSS custom properties, with a full dark theme
-that swaps only the tokens.
+**Passwords can't be stored in plaintext.** A `pre('save')` hook hashes with bcrypt,
+and the field is `select: false`, so no route can leak it by accident. The seed uses
+`create()` in a loop rather than `insertMany()` — `insertMany` skips the hook.
 
-### Motion
+**Registration can't grant admin.** `register` destructures only `name`, `email` and
+`password` from the body. `role` is never read from a request.
 
-Every animation comes from a preset in the skill's motion table (17 presets across
-7 categories, each graded Subtle / Standard / Complex). Implemented with **GSAP**
-plus ScrollTrigger, Flip and SplitText. It all lives in `src/motion/`.
+**Sign-in errors don't confirm which emails exist.** "No such user" and "wrong
+password" return the same message.
 
-| Preset (tier) | Where |
-|---|---|
-| Stagger List · Standard | Product grids — `grid: 'auto'` gives a diagonal wave across the CSS grid, `back.out(1.4)`, 0.06s apart |
-| Stagger List · Complex | Hero headline, SplitText per character, `expo.out` |
-| Scroll Reveal · Standard | Value props, banner, product-page buy box, admin stat cards |
-| Parallax Scroll · Subtle | Hero product image, scrubbed to scroll |
-| Hover · Standard | Product card lift — `y: -4, scale: 1.02` via `quickTo`, with a reverse tween on leave and focus |
-| Hover · Complex | Magnetic primary CTA that leans toward the cursor |
-| Page Transition · Subtle | 180ms fade-in on route change |
-| Page Transition · Complex | Flip morph: the card image you click becomes the product page's hero image |
-| Loading / Skeleton · Subtle | CSS shimmer on skeletons (kept in CSS — no reason for a tween) |
+**Stock decrements atomically.** One `bulkWrite` with `$inc`, so two simultaneous
+orders can't both sell the last unit.
 
-Plus a fly-to-bag arc on add-to-cart, an elastic pop on the wishlist heart, count-up
-on statistics, and bars growing from their baseline on the admin chart — deliberately
-without the `back.out` overshoot, which the skill flags as sloppy on data UI.
+**Derive live data, copy historical data.** Orders store their own totals and
+line-item prices. Changing a product's price tomorrow must not rewrite what someone
+paid last week.
 
-**How the rules were followed**
+**Animations respect `prefers-reduced-motion`.** GSAP is set up through
+`gsap.matchMedia`, so for those users no tween is created at all — not created and
+then skipped.
 
-- Everything runs inside `gsap.matchMedia()`. With `prefers-reduced-motion: reduce`, no tween is created at all and every element renders in its final state.
-- Nothing is hidden by CSS. With JavaScript disabled the whole page is visible — the skill's warning about shipping invisible-by-default content.
-- `gsap.context` scoping plus revert on unmount, so React 18 StrictMode's double-mount doesn't run every tween twice.
-- Hover and magnetic effects skip coarse pointers entirely and remove their listeners on unmount.
-- Product grids drop `pointer-events` for the length of their entrance so a click can't land on a card that is still sliding under the cursor.
-- The cart drawer stays mounted through its exit tween, so closing animates instead of cutting.
-
-GSAP 3.13+ ships Flip and SplitText under the standard
-[no-charge licence](https://gsap.com/standard-license) — worth re-checking if this
-ever becomes commercial.
-
-### Accessibility
-
-Checked, not assumed:
-
-- Every colour pair in both themes meets WCAG AA (4.5:1) for body text
-- Visible focus rings everywhere — never removed, only restyled
-- Form errors are inline, tied to their field with `aria-describedby`, and repeated in a focusable error summary that links back to each invalid input
-- Validation runs on blur and clears as soon as a field becomes valid
-- The cart drawer traps focus, closes on `Escape`, and returns focus to the trigger
-- Interactive targets are at least 44 × 44 px
-- Status is never conveyed by colour alone — stock, order status and chart values all carry text
-- SVG icons throughout; no emoji used as icons
-- Skip link, landmarks, live regions for result counts and toasts
+**Serverless connection caching.** Mongoose's connection is cached on `globalThis`,
+because a serverless function has no startup phase and connecting per request would
+exhaust Atlas's connection limit.
 
 ---
 
-## Project structure
+## Not included
+
+No payment processing. Orders are real database records with real totals, but
+nothing is charged — there's no card form and no Stripe integration. Adding Stripe
+test mode would be the natural next step.
+
+No TypeScript, no state management library, no CSS framework, no component library.
+All deliberate.
+
+![Voltix home](docs/home.png)
+![Shop](docs/shop.png)
+![Admin dashboard](docs/admin.png)
