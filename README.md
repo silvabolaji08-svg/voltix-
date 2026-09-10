@@ -62,13 +62,13 @@ npm run dev               # http://localhost:5000
 
 `server/.env`:
 
-| Variable         | Example                                            | Notes |
-|------------------|----------------------------------------------------|-------|
-| `PORT`           | `5000`                                             | |
+| Variable         | Example                                              | Notes |
+|------------------|------------------------------------------------------|-------|
+| `PORT`           | `5000`                                               | |
 | `MONGO_URI`      | `mongodb+srv://user:pass@cluster.mongodb.net/voltix` | Include `/voltix` before the `?` |
-| `JWT_SECRET`     | any long random string                             | Changing it invalidates every issued token |
-| `JWT_EXPIRES_IN` | `7d`                                               | |
-| `CLIENT_ORIGIN`  | `http://localhost:5173`                            | Comma-separated for more than one |
+| `JWT_SECRET`     | any long random string                               | Changing it invalidates every issued token |
+| `JWT_EXPIRES_IN` | `7d`                                                 | |
+| `CLIENT_ORIGIN`  | `http://localhost:5173`                              | Comma-separated for more than one |
 
 ### 2. The frontend
 
@@ -80,6 +80,10 @@ npm run dev               # http://localhost:5173
 ```
 
 Root `.env`:
+
+```
+VITE_API_URL=http://localhost:5000/api
+```
 
 Anything prefixed `VITE_` is substituted into the browser bundle at build time, so
 it is public. Secrets belong in `server/.env`, which never reaches the client.
@@ -104,14 +108,14 @@ Base path `/api`. All responses are JSON. Every model's `toJSON` renames `_id` t
 
 ### Products
 
-| Method | Path                  | Auth  | Notes |
-|--------|-----------------------|-------|-------|
-| GET    | `/products`           | —     | Filtered, sorted, paginated |
-| GET    | `/products/meta`      | —     | Brands, categories, price bounds for the filter sidebar |
-| GET    | `/products/:slug`     | —     | One product by slug |
-| POST   | `/products`           | admin | |
-| PUT    | `/products/:id`       | admin | |
-| DELETE | `/products/:id`       | admin | |
+| Method | Path              | Auth  | Notes |
+|--------|-------------------|-------|-------|
+| GET    | `/products`       | —     | Filtered, sorted, paginated |
+| GET    | `/products/meta`  | —     | Brands, categories, price bounds for the filter sidebar |
+| GET    | `/products/:slug` | —     | One product by slug |
+| POST   | `/products`       | admin | |
+| PUT    | `/products/:id`   | admin | |
+| DELETE | `/products/:id`   | admin | |
 
 `GET /products` accepts `q`, `category`, `brand` (comma-separated), `maxPrice`,
 `minRating`, `inStock=1`, `sale=1`, `page`, `limit`, and `sort` — one of
@@ -146,6 +150,29 @@ you tell "server down" from "database down".
 ---
 
 ## Structure
+
+```
+src/                    frontend
+  components/           header, footer, cards, filters, icons
+  context/              StoreContext — cart, wishlist, auth, catalogue
+  data/                 seed catalogue and demo users
+  hooks/                useLocalStorage
+  lib/api.js            the single fetch boundary
+  motion/               GSAP setup and the Flip helper
+  pages/                storefront routes
+  pages/admin/          dashboard, products, orders
+
+server/src/             API
+  config/db.js          cached Mongoose connection
+  models/               Product, User, Order
+  controllers/          request handling
+  routes/               route definitions
+  middleware/           auth, error handling
+  utils/token.js        JWT sign and verify
+  app.js                builds the Express app
+  index.js              starts it (skipped on Vercel)
+  seed.js               loads the demo data
+```
 
 ---
 
@@ -195,7 +222,3 @@ test mode would be the natural next step.
 
 No TypeScript, no state management library, no CSS framework, no component library.
 All deliberate.
-
-![Voltix home](docs/home.png)
-![Shop](docs/shop.png)
-![Admin dashboard](docs/admin.png)
