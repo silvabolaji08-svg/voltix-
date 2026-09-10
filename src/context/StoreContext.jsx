@@ -1,20 +1,27 @@
 import { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { prefersReducedMotion } from '../motion/gsap'
-import { products as seedProducts } from '../data/products'
-import { demoUsers, seedOrders } from '../data/seed'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { productsApi, authApi, ordersApi, setToken, clearToken, getToken } from '../lib/api'
 
 const StoreContext = createContext(null)
 
-export const TAX_RATE = 0.075
+/* The server is the authority on these now — kept here only so the cart
+   drawer can show "spend £X more for free delivery" before checkout. */
+export const TAX_RATE = 0.08
 export const FREE_SHIPPING_THRESHOLD = 250
 export const FLAT_SHIPPING = 12
 
 export function StoreProvider({ children }) {
-  
-  const [catalog, setCatalog] = useLocalStorage('voltix.catalog', seedProducts)
+  /* ---------------------------------------------------------- catalogue
+     Comes from the API now. Not persisted — the database is the single
+     source of truth, and a stale localStorage copy is exactly the bug
+     that made editing products.js appear to do nothing. */
+  const [catalog, setCatalog] = useState([])
+  const [catalogLoading, setCatalogLoading] = useState(true)
+  const [catalogError, setCatalogError] = useState(null)
 
-  /* --------------------------------------------------------------- cart */
+  /* --------------------------------------------------------------- cart
+     Stays local. A cart belongs to this browser until checkout. */
   const [cart, setCart] = useLocalStorage('voltix.cart', [])
   const [cartOpen, setCartOpen] = useState(false)
   const openTimer = useRef(null)
@@ -24,12 +31,14 @@ export function StoreProvider({ children }) {
   /* ----------------------------------------------------------- wishlist */
   const [wishlist, setWishlist] = useLocalStorage('voltix.wishlist', [])
 
-  /* --------------------------------------------------------------- auth */
-  const [user, setUser] = useLocalStorage('voltix.user', null)
-  const [accounts, setAccounts] = useLocalStorage('voltix.accounts', demoUsers)
+  /* --------------------------------------------------------------- auth
+     The token is in localStorage (see lib/api.js); the user object is
+     fetched from /auth/me so a revoked or expired token fails closed. */
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(Boolean(getToken()))
 
   /* ------------------------------------------------------------- orders */
-  const [orders, setOrders] = useLocalStorage('voltix.orders', seedOrders)
+  const [orders, setOrders] = useState([])
 
   /* -------------------------------------------------------------- theme */
   const [theme, setTheme] = useLocalStorage('voltix.theme', 'light')
@@ -51,7 +60,63 @@ export function StoreProvider({ children }) {
     setTimeout(() => setToasts((list) => list.filter((t) => t.id !== id)), 3200)
   }, [])
 
-  /* -------------------------------------------------------- cart actions */
+  /* ------------------------------------------------------ load catalogue */
+  const loadCatalog = useCallback(async (signal) => {
+    setCatalogLoading(true)
+    setCatalogError(null)
+    try {
+      const data = await productsApi.list({ limit: 100 }, { signal })
+      setCatalog(data.items)
+    } catch (err) {
+      if (err.name === 'AbortError') return
+      setCatalogError(err.message)
+    } finally {
+      setCatalogLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    loadCatalog(controller.signal)
+    return () => controller.abort()
+  }, [loadCatalog])
+
+  /* --------------------------------------------------- restore a session
+     A stored token proves nothing on its own — it may have expired or the
+     account may be gone. Ask the server who it belongs to. */
+  useEffect(() => {
+    if (!getToken()) return
+
+    const controller = new AbortController()
+    authApi
+      .me({ signal: controller.signal })
+      .then(({ user: me }) => setUser(me))
+      .catch(() => clearToken())
+      .finally(() => setAuthLoading(false))
+
+    return () => controller.abort()
+  }, [])
+
+  /* ---------------------------------------------------------- load orders
+     Customers get their own; admins get every order for the dashboard. */
+  const loadOrders = useCallback(async () => {
+    if (!user) {
+      setOrders([])
+      return
+    }
+    try {
+      const data = user.role === 'admin' ? await ordersApi.list() : await ordersApi.mine()
+      setOrders(data)
+    } catch {
+      /* not fatal — pages fall back to their empty states */
+    }
+  }, [user])
+
+  useEffect(() => {
+    loadOrders()
+  }, [loadOrders])
+
+    /* -------------------------------------------------------- cart actions */
   const lineKey = (productId, variant) => `${productId}::${variant ?? ''}`
 
   const addToCart = useCallback(
@@ -86,8 +151,7 @@ export function StoreProvider({ children }) {
       if (!openDrawer) return
 
       /* Otherwise let the fly-to-bag clone land before the drawer slides over
-         the bag icon it is flying towards. The toast and the count bubble
-         confirm the add immediately, so nothing is waiting on this. */
+         the bag icon it is flying towards. */
       if (prefersReducedMotion()) {
         setCartOpen(true)
       } else {
@@ -133,118 +197,139 @@ export function StoreProvider({ children }) {
 
   const inWishlist = useCallback((id) => wishlist.includes(id), [wishlist])
 
-    /* -------------------------------------------------------- auth actions */
+  /* -------------------------------------------------------- auth actions
+     Same { ok, error } shape the pages already expect, so Login.jsx and
+     Register.jsx need almost no changes — only the await. */
   const login = useCallback(
-    (email, password) => {
-      const found = accounts.find(
-        (a) => a.email.toLowerCase() === email.trim().toLowerCase() && a.password === password
-      )
-      if (!found) return { ok: false, error: 'That email and password combination does not match an account.' }
-      const { password: _pw, ...safe } = found
-      setUser(safe)
-      notify(`Welcome back, ${safe.name.split(' ')[0]}`)
-      return { ok: true, user: safe }
+    async (email, password) => {
+      try {
+        const { user: me, token } = await authApi.login({ email, password })
+        setToken(token)
+        setUser(me)
+        notify(`Welcome back, ${me.name.split(' ')[0]}`)
+        return { ok: true, user: me }
+      } catch (err) {
+        return { ok: false, error: err.message }
+      }
     },
-    [accounts, setUser, notify]
+    [notify]
   )
 
   const register = useCallback(
-    ({ name, email, password }) => {
-      const exists = accounts.some((a) => a.email.toLowerCase() === email.trim().toLowerCase())
-      if (exists) return { ok: false, error: 'An account with that email already exists.' }
-      const account = { id: `u-${Date.now()}`, name, email: email.trim(), password, role: 'customer' }
-      setAccounts((current) => [...current, account])
-      const { password: _pw, ...safe } = account
-      setUser(safe)
-      notify(`Account created — welcome, ${name.split(' ')[0]}`)
-      return { ok: true, user: safe }
+    async ({ name, email, password }) => {
+      try {
+        const { user: me, token } = await authApi.register({ name, email, password })
+        setToken(token)
+        setUser(me)
+        notify(`Account created — welcome, ${name.split(' ')[0]}`)
+        return { ok: true, user: me }
+      } catch (err) {
+        return { ok: false, error: err.message }
+      }
     },
-    [accounts, setAccounts, setUser, notify]
+    [notify]
   )
 
   const logout = useCallback(() => {
+    clearToken()
     setUser(null)
+    setOrders([])
     notify('Signed out')
-  }, [setUser, notify])
+  }, [notify])
 
-  /* ------------------------------------------------------ order actions */
+    /* ------------------------------------------------------ order actions */
   const placeOrder = useCallback(
-    (details) => {
-      const subtotal = cart.reduce((sum, l) => sum + l.price * l.quantity, 0)
-      const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING
-      const tax = +(subtotal * TAX_RATE).toFixed(2)
-      const order = {
-        id: `VLT-${Math.floor(24100 + Math.random() * 800)}`,
-        userId: user?.id ?? 'guest',
-        customer: { name: details.name, email: details.email },
-        date: new Date().toISOString(),
-        status: 'Pending',
+    async (details) => {
+      const payload = {
         items: cart.map((l) => ({
           productId: l.productId,
-          name: l.name,
-          slug: l.slug,
-          image: l.image,
-          price: l.price,
           quantity: l.quantity,
           variant: l.variant,
         })),
-        subtotal,
-        shipping,
-        tax,
-        total: +(subtotal + shipping + tax).toFixed(2),
+        customer: { name: details.name, email: details.email },
         shippingAddress: {
           line1: details.address,
           city: details.city,
-          state: details.state,
+          state: details.state ?? '',
           postcode: details.postcode,
           country: details.country,
         },
-        payment: `Card ending ${details.cardNumber.replace(/\s/g, '').slice(-4)}`,
+        shippingMethod: details.shippingMethod ?? 'Standard',
+        payment: `Card ending ${String(details.cardNumber ?? '').replace(/\s/g, '').slice(-4)}`,
+        shippingCost: totals.shipping,
       }
+
+      const order = await ordersApi.create(payload)
       setOrders((current) => [order, ...current])
       clearCart()
+      /* Stock changed server-side, so the catalogue on screen is now stale. */
+      loadCatalog()
       return order
     },
-    [cart, user, setOrders, clearCart]
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+    [cart, clearCart, loadCatalog]
   )
 
   const updateOrderStatus = useCallback(
-    (orderId, status) => {
-      setOrders((current) => current.map((o) => (o.id === orderId ? { ...o, status } : o)))
-      notify(`Order ${orderId} marked ${status.toLowerCase()}`)
+    async (reference, status) => {
+      try {
+        const updated = await ordersApi.setStatus(reference, status)
+        setOrders((current) => current.map((o) => (o.id === reference ? updated : o)))
+        notify(`Order ${reference} marked ${status.toLowerCase()}`)
+      } catch (err) {
+        notify(err.message, 'error')
+      }
     },
-    [setOrders, notify]
+    [notify]
   )
 
   /* --------------------------------------------- admin catalogue actions */
   const saveProduct = useCallback(
-    (draft) => {
-      setCatalog((current) => {
-        const exists = current.some((p) => p.id === draft.id)
-        return exists ? current.map((p) => (p.id === draft.id ? { ...p, ...draft } : p)) : [{ ...draft }, ...current]
-      })
-      notify(`${draft.name} saved`)
+    async (draft) => {
+      try {
+        /* An id that exists in the catalogue means edit; anything else —
+           including the placeholder AdminProducts invents — means create. */
+        const isExisting = catalog.some((p) => p.id === draft.id)
+
+        if (isExisting) {
+          const updated = await productsApi.update(draft.id, draft)
+          setCatalog((current) => current.map((p) => (p.id === updated.id ? updated : p)))
+        } else {
+          const { id: _ignored, ...fields } = draft
+          const created = await productsApi.create(fields)
+          setCatalog((current) => [created, ...current])
+        }
+        notify(`${draft.name} saved`)
+      } catch (err) {
+        notify(err.message, 'error')
+      }
     },
-    [setCatalog, notify]
+    [catalog, notify]
   )
 
   const deleteProduct = useCallback(
-    (id) => {
-      setCatalog((current) => current.filter((p) => p.id !== id))
-      notify('Product deleted')
+    async (id) => {
+      try {
+        await productsApi.remove(id)
+        setCatalog((current) => current.filter((p) => p.id !== id))
+        notify('Product deleted')
+      } catch (err) {
+        notify(err.message, 'error')
+      }
     },
-    [setCatalog, notify]
+    [notify]
   )
 
-  const resetDemoData = useCallback(() => {
-    setCatalog(seedProducts)
-    setOrders(seedOrders)
-    setCart([])
-    setWishlist([])
-    notify('Demo data reset')
-  }, [setCatalog, setOrders, setCart, setWishlist, notify])
+  /* Was "reset demo data" when everything lived in localStorage. The server
+     owns the data now, so the honest version is a refresh. */
+  const refreshData = useCallback(async () => {
+    await Promise.all([loadCatalog(), loadOrders()])
+    notify('Refreshed from server')
+  }, [loadCatalog, loadOrders, notify])
 
-  /* ------------------------------------------------------------ totals */
+  /* ------------------------------------------------------------ totals
+     Still derived on the client so the cart updates instantly — but the
+     server recomputes everything at checkout and its numbers win. */
   const totals = useMemo(() => {
     const subtotal = cart.reduce((sum, l) => sum + l.price * l.quantity, 0)
     const shipping = subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING
@@ -262,6 +347,9 @@ export function StoreProvider({ children }) {
   const value = useMemo(
     () => ({
       catalog,
+      catalogLoading,
+      catalogError,
+      reloadCatalog: loadCatalog,
       cart,
       totals,
       cartOpen,
@@ -274,24 +362,28 @@ export function StoreProvider({ children }) {
       toggleWishlist,
       inWishlist,
       user,
+      authLoading,
       login,
       register,
       logout,
       orders,
+      reloadOrders: loadOrders,
       placeOrder,
       updateOrderStatus,
       saveProduct,
       deleteProduct,
-      resetDemoData,
+      refreshData,
+      resetDemoData: refreshData,
       theme,
       toggleTheme,
       toasts,
       notify,
     }),
     [
-      catalog, cart, totals, cartOpen, addToCart, updateQuantity, removeFromCart, clearCart,
-      wishlist, toggleWishlist, inWishlist, user, login, register, logout, orders, placeOrder,
-      updateOrderStatus, saveProduct, deleteProduct, resetDemoData, theme, toggleTheme, toasts, notify,
+      catalog, catalogLoading, catalogError, loadCatalog, cart, totals, cartOpen, addToCart,
+      updateQuantity, removeFromCart, clearCart, wishlist, toggleWishlist, inWishlist, user,
+      authLoading, login, register, logout, orders, loadOrders, placeOrder, updateOrderStatus,
+      saveProduct, deleteProduct, refreshData, theme, toggleTheme, toasts, notify,
     ]
   )
 
